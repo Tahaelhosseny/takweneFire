@@ -1,0 +1,1 @@
+Error: ENOENT: no such file or directory, open 'D:\BioDrop- 16 apr\BioDrop-main3\BioDrop-main\.next\BUILD_ID'

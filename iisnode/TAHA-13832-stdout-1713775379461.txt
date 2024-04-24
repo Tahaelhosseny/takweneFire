@@ -1,0 +1,3 @@
+> Ready on http://localhost:\\.\pipe\59dede53-94bb-465a-815e-ba6495c44f51
+The server environment variables are valid!
+The server environment variables are valid!
