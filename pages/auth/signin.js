@@ -6,11 +6,13 @@ import { authOptions } from "pages/api/auth/[...nextauth]";
 import { BsGoogle } from "react-icons/bs";
 import Button from "@components/Button";
 import Link from "@components/Link";
+import logger from "@config/logger";
 
 export async function getServerSideProps(context) {
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (session) {
+    logger.info({ redirect: { destination: "/" } }+"ccccccc");
     return { redirect: { destination: "/" } };
   }
 

@@ -22,6 +22,7 @@ export const authOptions = {
     GoogleProvider({
       clientId: serverEnv.GOOGLE_CLIENT_ID,
       clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
+      callbackUrl:'http://link.takwene.com:3000/auth/callback',
       scope: "profile email",
       profile(profile) {
         return {
@@ -54,6 +55,7 @@ export const authOptions = {
     async redirect({ baseUrl }) {
 
       return `${baseUrl}/`;
+      //return 'http://link.takwene.com:3000/'
     },
     async jwt({ token, account, profile }) {
 
