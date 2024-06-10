@@ -1,14 +1,12 @@
 import { authOptions } from "../api/auth/[...nextauth]";
 import { getServerSession } from "next-auth/next";
 import { useSession } from "next-auth/react";
-import dynamic from "next/dynamic";
 import { FaMapPin, FaArrowPointer, FaArrowRight } from "react-icons/fa6";
 
 import { getUserApi } from "../api/profiles/[username]";
 import { clientEnv } from "@config/schemas/clientSchema";
 import { getStats } from "../api/account/statistics";
 import logger from "@config/logger";
-import Alert from "@components/Alert";
 import Page from "@components/Page";
 import { abbreviateNumber } from "@services/utils/abbreviateNumbers";
 import Navigation from "@components/account/manage/Navigation";
@@ -18,17 +16,14 @@ import axios from 'axios';
 import Markdown from "@components/Markdown";
 import Button from "@components/Button";
 
-const DynamicChart = dynamic(
-  () => import("../../components/statistics/BarGraph"),
-  { ssr: false },
-);
+
 
 export async function getServerSideProps(context) {
   const { req, res } = context;
   const session = await getServerSession(req, res, authOptions);
   const username = session.username;
 
-  const { status, profile } = await getUserApi(req, res, username);
+  const {  profile } = await getUserApi(req, res, username);
   /*if (status !== 200) {
     logger.error(
       profile.error,

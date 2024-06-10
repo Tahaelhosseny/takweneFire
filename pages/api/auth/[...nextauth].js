@@ -13,7 +13,6 @@ import {
 import logger from "@config/logger";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { boolean } from "zod";
 
 export const authOptions = {
   adapter: DbAdapter(connectMongo),
