@@ -12,6 +12,210 @@ import {
 } from "../account/account";
 import logger from "@config/logger";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { boolean } from "zod";
+
+export const authOptions = {
+  adapter: DbAdapter(connectMongo),
+  providers: [
+    GoogleProvider({
+      clientId: serverEnv.GOOGLE_CLIENT_ID,
+      clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
+      scope: "profile email",
+      profile(profile) {
+        return {
+          id: profile.sub.toString(),
+          name: profile.given_name,
+          username: profile.email,
+          email: profile.email,
+          image: profile.picture,
+        };
+      },
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        await connectMongo();
+        const user = await User.findOne({ email: credentials.email });
+        logger.info("My passord"+ credentials.password);
+
+        console.error(user);
+        if (!user) {
+          throw new Error("No user found with the given email");
+        }
+
+        // Add logic to verify password
+        var isValidPassword = false  ;
+        if(credentials.password === user.password);
+          isValidPassword = true;
+        if (!isValidPassword) {
+          throw new Error("Invalid password");
+        }
+
+        return user;
+      },
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+  },
+  callbacks: {
+    async signIn({ user, profile, account }) {
+      await connectMongo();
+
+      if (account.provider === "google") {
+        await Account.findOneAndUpdate(
+          { userId: user._id },
+          {
+            Google: {
+              company: profile.hd,
+            },
+          },
+          { upsert: true },
+        );
+      }
+
+      return true;
+    },
+    async redirect({ baseUrl }) {
+      return `${baseUrl}/`;
+    },
+    async jwt({ token, account, profile }) {
+      if (account) {
+        token.accessToken = account.access_token;
+        if (account.provider === "google") {
+          token.id = profile.id;
+          token.username = profile.login;
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      await connectMongo();
+      session.accessToken = token.accessToken;
+      session.user.id = token.sub;
+      session.username = token.email;
+      session.image = token.picture;
+
+      const user = await User.findOne({ _id: token.sub });
+      if (user) {
+        session.accountType = user.type;
+        session.stripeCustomerId = user.stripeCustomerId;
+      } else {
+        session.accountType = "free";
+        session.stripeCustomerId = null;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/auth/signin",
+  },
+  events: {
+    async signIn({ profile }) {
+      await connectMongo();
+      const username = profile.email;
+      const defaultLink = (profileId) => ({
+        username,
+        name: "Google",
+        url: `https://plus.google.com/${username}`,
+        icon: "FaGoogle",
+        isEnabled: true,
+        isPinned: true,
+        animation: "glow",
+        profile: new ObjectId(profileId),
+      });
+
+      const account = await getAccountByProviderAccountId(profile.id);
+      const user = await User.findOne({ _id: account.userId });
+
+      let profileData = await Profile.findOne({ username });
+      if (!profileData) {
+        logger.info("profile not found for: ", username);
+        profileData = await Profile.findOneAndUpdate(
+          { username },
+          {
+            source: "database",
+            name: profile.name,
+            bio: "Have a look at my BioDrop Profile!",
+            user: account.userId,
+          },
+          {
+            new: true,
+            upsert: true,
+          },
+        );
+        const link = await Link.create([defaultLink(profileData._id)], {
+          new: true,
+        });
+        profileData = await Profile.findOneAndUpdate(
+          { username },
+          {
+            $push: { links: new ObjectId(link[0]._id) },
+          },
+          { new: true },
+        );
+      }
+
+      await associateProfileWithAccount(account, profileData._id);
+
+      if (!user.stripeCustomerId) {
+        logger.info("user stripe customer id not found for: ", user.email);
+
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.name,
+          metadata: {
+            userId: account.userId,
+            google: username,
+          },
+        });
+
+        await User.findOneAndUpdate(
+          { _id: new ObjectId(account.userId) },
+          { stripeCustomerId: customer.id, type: "free" },
+        );
+      }
+
+      if (profileData.links.length === 0) {
+        logger.info("no links found for: ", username);
+        const link = await Link.create([defaultLink(profileData._id)], {
+          new: true,
+        });
+        await Profile.findOneAndUpdate(
+          { username },
+          {
+            $push: { links: new ObjectId(link[0]._id) },
+          },
+        );
+      }
+    },
+  },
+};
+
+export default NextAuth(authOptions);
+
+
+
+
+/*import NextAuth from "next-auth";
+import { ObjectId } from "bson";
+
+import { serverEnv } from "@config/schemas/serverSchema";
+import stripe from "@config/stripe";
+import DbAdapter from "./db-adapter";
+import connectMongo from "@config/mongo";
+import { Account, Link, Profile, User } from "@models/index";
+import {
+  getAccountByProviderAccountId,
+  associateProfileWithAccount,
+} from "../account/account";
+import logger from "@config/logger";
+import GoogleProvider from "next-auth/providers/google";
 
 
 
@@ -22,7 +226,6 @@ export const authOptions = {
     GoogleProvider({
       clientId: serverEnv.GOOGLE_CLIENT_ID,
       clientSecret: serverEnv.GOOGLE_CLIENT_SECRET,
-      callbackUrl:'http://link.takwene.com:3000/auth/callback',
       scope: "profile email",
       profile(profile) {
         return {
@@ -348,4 +551,4 @@ export default NextAuth(authOptions);
   },
 };*/
 
-//export default NextAuth(authOptions);
+//export default NextAuth(authOptions);*/

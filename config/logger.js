@@ -11,7 +11,9 @@ const config = {
 };
 
 let logger;
+try{
+  logger = PinoLogger.pino(serverEnv.NODE_ENV === "development" ? config : {});
 
-logger = PinoLogger.pino(serverEnv.NODE_ENV === "development" ? config : {});
+}catch(e){}
 
 export default logger;

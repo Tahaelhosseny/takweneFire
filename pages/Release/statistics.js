@@ -29,7 +29,7 @@ export async function getServerSideProps(context) {
   const username = session.username;
 
   const { status, profile } = await getUserApi(req, res, username);
-  if (status !== 200) {
+  /*if (status !== 200) {
     logger.error(
       profile.error,
       `profile loading failed for username: ${username}`,
@@ -41,7 +41,7 @@ export async function getServerSideProps(context) {
         permanent: false,
       },
     };
-  }
+  }*/
 
   let data = {};
 
@@ -51,7 +51,7 @@ export async function getServerSideProps(context) {
     logger.error(e, "ERROR get user's account statistics");
   }
 
-  data.links.individual = data.links.individual.filter((link) =>
+  /*data.links.individual = data.links.individual.filter((link) =>
     profile.links.some((pLink) => pLink.url === link.url),
   );
 
@@ -65,7 +65,7 @@ export async function getServerSideProps(context) {
       views: day.views,
       date: day.date,
     };
-  });
+  });*/
 
   return {
     props: {
@@ -153,23 +153,9 @@ export default function Statistics({ data, profile }) {
         
       </div>
 
-        {!data.links && (
-          <Alert type="warning" message="You don't have a profile yet." />
-        )}
+        
 
-        {data.profile.daily.length > 0 && (
-          <div className="border mb-6 dark:border-primary-medium">
-            <div className="border-b border-primary-low bg-white dark:bg-primary-high dark:border-primary-medium px-4 py-5 mb-2 sm:px-6">
-              <h3 className="text-lg font-medium leading-6 text-primary-high">
-                Profile views
-              </h3>
-              <p className="mt-1 text-sm text-primary-medium dark:text-primary-medium-low">
-                Number of Profile visits per day for the last 30 days
-              </p>
-            </div>
-            <DynamicChart data={data.profile.daily} />
-          </div>
-        )}
+        
 
         {session && session.accountType === "premium" && profile.stats && (
           <ul
@@ -248,7 +234,7 @@ export default function Statistics({ data, profile }) {
                 scope="col"
                 className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-primary-high dark:text-primary-low sm:pl-6"
               >
-                Your Links ({data.links.individual.length})
+               
               </th>
               <th
                 scope="col"
